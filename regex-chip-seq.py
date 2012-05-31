@@ -31,13 +31,20 @@ def download_cell_type(cell_type, output_folder=curr_dir):
     d = dict([(x[1], x[4].split('GeneCard:')[1]) for x in d if 'GeneCard' in x[4]])
     antibody_dict = d
     
+    #########################
+    # Read intervals of TFs #
+    #########################
+    
+    # Rearrange columns into BED format and remove entries with weird
+    # chromosome names, e.g. chr6_cox_...
+    cmd = """awk '{ print $4"\t"$5"\t"$6"\t"$2}' {0}.txt | grep -v "chr*_" | tail -n +2 > {0}_normal_chr.txt""".format('List_of_TFs')
+    subprocess.call(cmd, shell=True)
 
-    # Read gene intervals 
     # Combine intervals with the same gene name
     gene_loc = [x.split('\t')[1:] for x in open('List_of_TFs_normal_chr.txt').read().split('\n') if x!='']
     gene_loc = gene_loc[1:]  # Read out header
-    gene_set = set([x[1] for x in gene_loc])
-    gene_loc_dict = dict()
+    gene_set = set([x[1] for x in gene_loc])  # Unique set of gene names
+    gene_loc_dict = dict()  # Dictionary: gene name -->  [chromosome, start, end]
     for gene_name, gene_id, gene_chr, gene_start, gene_end in gene_loc:
 
         gene_start, gene_end = int(gene_start), int(gene_end)
@@ -55,7 +62,6 @@ def download_cell_type(cell_type, output_folder=curr_dir):
 
     gene_loc_items = gene_loc_dict.items()
     gene_loc_items.sort(key = lambda a: a[1][1])
-
 
     # Write BED file of antibody intervals
     f = open('List_of_TFs.bed', 'w')
