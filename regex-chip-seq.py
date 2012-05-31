@@ -31,9 +31,11 @@ def download_cell_type(cell_type, output_folder=curr_dir):
     d = dict([(x[1], x[4].split('GeneCard:')[1]) for x in d if 'GeneCard' in x[4]])
     antibody_dict = d
     
+
     # Read gene intervals 
-    gene_loc = [x.split('\t')[1:] for x in open('List_of_TFs.txt').read().split('\n') if x!='']
-    gene_loc = gene_loc[1:] # Read out header
+    # Combine intervals with the same gene name
+    gene_loc = [x.split('\t')[1:] for x in open('List_of_TFs_normal_chr.txt').read().split('\n') if x!='']
+    gene_loc = gene_loc[1:]  # Read out header
     gene_set = set([x[1] for x in gene_loc])
     gene_loc_dict = dict()
     for gene_name, gene_id, gene_chr, gene_start, gene_end in gene_loc:
@@ -43,11 +45,12 @@ def download_cell_type(cell_type, output_folder=curr_dir):
         gene_end = max(gene_start, gene_end)
 
         if gene_loc_dict.has_key(gene_name):
-            gene_loc_dict[gene_name][1] = min(gene_loc_dict[gene_name][1], gene_start)
-            gene_loc_dict[gene_name][2] = max(gene_loc_dict[gene_name][2], gene_end)
+            x = gene_loc_dict[gene_name]
+            x[1:3] = [min(x[1], gene_start), max(x[2], gene_end)]
+            assert x[0]==gene_chr
         else:
-            gene_loc_dict[gene_name] = [gene_chr, gene_start, gene_end]
-
+            gene_loc_dict[gene_name] = [gene_chr, gene_start, gene_end]  
+      
         assert gene_loc_dict[gene_name][1] <= gene_loc_dict[gene_name][2]
 
     gene_loc_items = gene_loc_dict.items()
@@ -62,14 +65,14 @@ def download_cell_type(cell_type, output_folder=curr_dir):
     # wget all peak files
     triples = [[x,y,antibody_dict[z]] for x,y,z in zip(download_list, cell_list, antibody_list) if antibody_dict.has_key(z)]
     
-    triples = triples[:1]
+#    triples = triples[:1]
 
     for link, cell, antibody in triples:
         y = os.path.join(output_folder, cell, antibody)
         if not os.path.isdir(y): os.makedirs(y)
     cmd_list = ['wget {0} -O {1} ; gunzip {1}'.format(x, os.path.join(output_folder, cell, antibody, link.split('/')[-1])) for link, cell, antibody in triples]
     for cmd in cmd_list:
-        #subprocess.Popen(cmd, shell=True).wait()
+        subprocess.Popen(cmd, shell=True).wait()
         pass
 
     # BED file of all TF genes in human genome (is this hg19?)
@@ -86,18 +89,14 @@ def download_cell_type(cell_type, output_folder=curr_dir):
         peak_file = os.path.join(output_folder, cell, antibody, link.split('/')[-1].split('.gz')[0])
 
         output_prefix = '{0}_{1}'.format(cell, antibody)
+        output_bed = os.path.join(output_folder, cell, output_prefix+'.bed')
+        output_names = os.path.join(output_folder, cell, output_prefix+'.txt')
 
         # Use windowBed to get subset of TF BED intervals that
         # are at most <window> positions away from some peak
-        cmd = 'windowBed -u -w {0} -a {1} -b {2} > {3}'.format(window, all_tf, peak_file, os.path.join(output_folder, cell, output_prefix+'.bed'))
+        cmd = 'windowBed -u -w {0} -a {1} -b {2} > {3} ; cut -f{4} {3} {5}'.format(window, all_tf, peak_file, output_bed, column, output_names)
         print cmd
         subprocess.call(cmd, shell=True)
-
-        # Extract TF names from BED file
-        column = 4
-        cmd = 'cut -f{0} {1} > {2}'.format(column, os.path.join(output_folder, cell, output_prefix+'.bed'), os.path.join(output_folder, cell, output_prefix+'.txt'))
-        subprocess.call(cmd, shell=True)
-        print cmd
     
 if __name__=='__main__':
 
