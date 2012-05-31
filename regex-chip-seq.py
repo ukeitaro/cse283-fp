@@ -4,13 +4,15 @@ curr_dir = os.getcwd()
 
 def download_cell_type(cell_type, output_folder=curr_dir):
 
-    # Query UCSC
-    cmd = '''wget "http://genome.ucsc.edu/cgi-bin/hgFileSearch?hgsid=273586915&db=hg19&hgt_tsDelRow=&hgt_tsAddRow=&tsName=&tsDescr=&tsGroup=Any&fsFileType=Any&hgt_mdbVar1=dataType&hgt_mdbVal1=ChipSeq&hgt_mdbVar2=cell&hgt_mdbVal2={0}&hgt_mdbVar3=antibody&hgt_mdbVal3=Any&hgt_mdbVar4=view&hgt_mdbVal4=Peaks&hgfs_Search=search" -O {1}'''.format(cell_type, cell_type+'.html')
+    ##############
+    # Query UCSC #
+    ##############
 
+    cmd = '''wget "http://genome.ucsc.edu/cgi-bin/hgFileSearch?hgsid=273586915&db=hg19&hgt_tsDelRow=&hgt_tsAddRow=&tsName=&tsDescr=&tsGroup=Any&fsFileType=Any&hgt_mdbVar1=dataType&hgt_mdbVal1=ChipSeq&hgt_mdbVar2=cell&hgt_mdbVal2={0}&hgt_mdbVar3=antibody&hgt_mdbVal3=Any&hgt_mdbVar4=view&hgt_mdbVal4=Peaks&hgfs_Search=search" -O {1}'''.format(cell_type, cell_type+'.html')
+    
     subprocess.Popen(cmd, shell=True).wait()
 
     html_string = open(cell_type + '.html').read()
-
 
 
     ###################################################
@@ -28,10 +30,8 @@ def download_cell_type(cell_type, output_folder=curr_dir):
     cell_list = [a.split('cell=')[1].split(';')[0] for a in x]
 
     d = [x.split('\t') for x in open('encode_antibodies.txt').read().split('\n') if x!='']
-    d = dict([(x[1], x[4].split('GeneCard:')[1]) for x in d if 'GeneCard' in x[4]])
-    antibody_dict = d
+    antibody_dict = dict([(x[1], x[4].split('GeneCard:')[1]) for x in d if 'GeneCard' in x[4]])
     
-
     # Read gene intervals 
     # Combine intervals with the same gene name
     gene_loc = [x.split('\t')[1:] for x in open('List_of_TFs_normal_chr.txt').read().split('\n') if x!='']
