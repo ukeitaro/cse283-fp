@@ -32,7 +32,35 @@ def download_cell_type(cell_type, output_folder=curr_dir):
 
     d = [x.split('\t') for x in open('encode_antibodies.txt').read().split('\n') if x!='']
     antibody_dict = dict([(x[1], x[4].split('GeneCard:')[1]) for x in d if 'GeneCard' in x[4]])
+    
+    #########################
+    # Read intervals of TFs #
+    #########################
+    
+    # Rearrange columns into BED format and remove entries with weird
+    # chromosome names, e.g. chr6_cox_...
+    cmd = """awk '{ print $4"\t"$5"\t"$6"\t"$2}' {0}.txt | grep -v "chr*_" | tail -n +2 > {0}_normal_chr.txt""".format('List_of_TFs')
+    subprocess.call(cmd, shell=True)
 
+    # # Combine intervals with the same gene name
+    # gene_loc = [x.split('\t')[1:] for x in open('List_of_TFs_normal_chr.txt').read().split('\n') if x!='']
+    # gene_loc = gene_loc[1:]  # Read out header
+    # gene_set = set([x[1] for x in gene_loc])  # Unique set of gene names
+    # gene_loc_dict = dict()  # Dictionary: gene name -->  [chromosome, start, end]
+    # for gene_name, gene_id, gene_chr, gene_start, gene_end in gene_loc:
+
+    #     gene_start, gene_end = int(gene_start), int(gene_end)
+    #     gene_start = min(gene_start, gene_end)
+    #     gene_end = max(gene_start, gene_end)
+
+    #     if gene_loc_dict.has_key(gene_name):
+    #         x = gene_loc_dict[gene_name]
+    #         x[1:3] = [min(x[1], gene_start), max(x[2], gene_end)]
+    #         assert x[0]==gene_chr
+    #     else:
+    #         gene_loc_dict[gene_name] = [gene_chr, gene_start, gene_end]  
+      
+    #     assert gene_loc_dict[gene_name][1] <= gene_loc_dict[gene_name][2]
 
     #######################
     # wget all peak files #
